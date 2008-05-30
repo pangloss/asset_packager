@@ -1,63 +1,43 @@
-$:.unshift(File.dirname(__FILE__) + '/../lib')
+require File.dirname(__FILE__) + '/asset_packager_test_helper.rb'
 
-require File.dirname(__FILE__) + '/../../../../config/environment'
-require 'test/unit'
-require 'rubygems'
-require 'mocha'
+class AssetPackageHelperProductionWithREVISIONFile < AssetPackageHelperTest
+  def setup
+    super
 
-require 'action_controller/test_process'
+    @revision_file  = RAILS_ROOT + "/REVISION"
+    @revision      = "42"
 
-ActionController::Base.logger = nil
-ActionController::Base.ignore_missing_templates = false
-ActionController::Routing::Routes.reload rescue nil
+    File.open( @revision_file, "w+" ) do |file|
+      file.write( @revision )
+    end
 
-$asset_packages_yml = YAML.load_file("#{RAILS_ROOT}/vendor/plugins/asset_packager/test/asset_packages.yml")
-$asset_base_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/test/assets"
+    build_packages_once
+    self.stubs(:should_merge?).returns(true)
+  end
 
-class AssetPackageHelperProductionTest < Test::Unit::TestCase
-  include ActionView::Helpers::TagHelper
-  include ActionView::Helpers::AssetTagHelper
-  include Synthesis::AssetPackageHelper
+  def teardown
+    File.unlink( @revision_file )
+  end
 
+  def test_js_with_revision_file_uses_our_custom_version_number
+    current_file = Synthesis::AssetPackage.find_by_source("javascripts", "prototype").current_file
+    assert_equal "base_#{@revision}", current_file
+  end
+
+end
+
+class AssetPackageHelperProductionTest < AssetPackageHelperTest
   cattr_accessor :packages_built
 
   def setup
-    Synthesis::AssetPackage.any_instance.stubs(:log)
-    self.stubs(:should_merge?).returns(true)
-
-    @controller = Class.new do
-
-      attr_reader :request
-      def initialize
-        @request = Class.new do
-          def relative_url_root
-            ""
-          end
-        end.new
-      end
-
-    end.new
-
+    super
     build_packages_once
-  end
-
-  def build_packages_once
-    unless @@packages_built
-      Synthesis::AssetPackage.build_all
-      @@packages_built = true
-    end
-  end
-  
-  def build_js_expected_string(*sources)
-    sources.map {|s| %(<script src="/javascripts/#{s}.js" type="text/javascript"></script>) }.join("\n")
-  end
-    
-  def build_css_expected_string(*sources)
-    sources.map {|s| %(<link href="/stylesheets/#{s}.css" rel="Stylesheet" type="text/css" media="screen" />) }.join("\n")
+    self.stubs(:should_merge?).returns(true)
   end
 
   def test_js_basic
     current_file = Synthesis::AssetPackage.find_by_source("javascripts", "prototype").current_file
+
     assert_dom_equal build_js_expected_string(current_file),
       javascript_include_merged("prototype")
   end
@@ -147,7 +127,7 @@ class AssetPackageHelperProductionTest < Test::Unit::TestCase
   
   def test_image_tag
     timestamp = rails_asset_id("images/rails.png")
-    assert_dom_equal %(<img alt="Rails" src="/images/rails.png?#{timestamp}" />), image_tag("rails")
+    assert_dom_equal %(<img alt="Rails" src="/images/rails.png?#{timestamp}" />), image_tag("rails.png")
   end
   
 end
