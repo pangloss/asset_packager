@@ -143,16 +143,19 @@ module Synthesis
         end
         @revision
       end
-  
+
       def get_file_revision(path)
-        if File.exists?(path)
-          begin
-            `svn info #{path} 2>/dev/null`[/Last Changed Rev: (.*?)\n/][/(\d+)/].to_i
-          rescue # use filename timestamp if not in subversion
+        begin
+          # Test if the developer has .svn directory. He might use GIT, for example, then a svn info will not work.
+          if Dir.entries(".").include? ".svn"
+            `svn info #{path}`[/Last Changed Rev: (.*?)\n/][/(\d+)/].to_i
+          else
             File.mtime(path).to_i
           end
-        else
-          0
+
+        # The project can have .svn directory, but the SVN is not installed, thus I kept the begin..rescue 
+        rescue # use filename timestamp if not in subversion
+          File.mtime(path).to_i
         end
       end
 
