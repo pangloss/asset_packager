@@ -1,9 +1,14 @@
-require File.dirname(__FILE__) + '/../../../../config/environment'
-require 'test/unit'
-require 'mocha'
+RAILS_ROOT = File.dirname(__FILE__) + "/fake_rails_root"
 
-$asset_packages_yml = YAML.load_file("#{RAILS_ROOT}/vendor/plugins/asset_packager/test/asset_packages.yml")
-$asset_base_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/test/assets"
+require 'test/unit'
+require 'rubygems'
+require 'mocha'
+require 'yaml'
+require 'synthesis/asset_package'
+require 'synthesis/asset_package_helper'
+
+$asset_packages_yml = YAML.load_file( RAILS_ROOT + "/config/asset_packages.yml" )
+$asset_base_path = RAILS_ROOT + "/public"
 
 class AssetPackagerTest < Test::Unit::TestCase
   include Synthesis

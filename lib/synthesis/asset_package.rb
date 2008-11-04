@@ -102,7 +102,7 @@ module Synthesis
       @asset_path = ($asset_base_path ? "#{$asset_base_path}/" : "#{RAILS_ROOT}/public/") +
           "#{@asset_type}#{@target_dir.gsub(/^(.+)$/, '/\1')}"
       @extension = get_extension
-      @match_regex = Regexp.new("\\A#{@target}_\\d+.#{@extension}\\z")
+      @match_regex = Regexp.new("\\A#{@target}_[0-9a-fA-F]+.#{@extension}\\z")
     end
   
     def current_file
@@ -130,6 +130,11 @@ module Synthesis
     private
       def revision
         unless @revision
+
+          # If the REVISION file exists, just use it to specify the revision information
+          revision_file_path = File.join( RAILS_ROOT, "REVISION" )
+          return @revision = File.read( revision_file_path ).strip if File.exist?( revision_file_path )
+
           revisions = [1]
           @sources.each do |source|
             revisions << get_file_revision("#{@asset_path}/#{source}.#{@extension}")
@@ -138,17 +143,15 @@ module Synthesis
         end
         @revision
       end
-  
+
       def get_file_revision(path)
-        if File.exists?(path)
-          begin
-            `svn info #{path} 2> /dev/null`[/Last Changed Rev: (.*?)\n/][/(\d+)/].to_i
-          rescue
-            `git-log -1 --pretty=format:"%at" 2>/dev/null`.to_i
-          rescue # use filename timestamp if all else fails
-            File.mtime(path).to_i
-          end
-        else
+        begin
+          `svn info #{path} 2> /dev/null`[/Last Changed Rev: (.*?)\n/][/(\d+)/].to_i
+        rescue
+          `git-log -1 --pretty=format:"%at" 2>/dev/null`.to_i
+        rescue # use filename timestamp if all else fails
+          File.mtime(path).to_i
+        rescue
           0
         end
       end
@@ -180,7 +183,7 @@ module Synthesis
       end
 
       def compress_js(source)
-        jsmin_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/lib"
+        jsmin_path = File.dirname(__FILE__) + "/../"
         tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_#{revision}"
       
         # write out to a temp file

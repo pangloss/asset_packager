@@ -1,49 +1,8 @@
-$:.unshift(File.dirname(__FILE__) + '/../lib')
-
 ENV['RAILS_ENV'] = "development"
-require File.dirname(__FILE__) + '/../../../../config/environment'
-require 'test/unit'
-require 'rubygems'
-require 'mocha'
+require File.dirname(__FILE__) + '/asset_packager_test_helper.rb'
 
-require 'action_controller/test_process'
+class AssetPackageHelperProductionTest < AssetPackageHelperTest
 
-ActionController::Base.logger = nil
-ActionController::Base.ignore_missing_templates = false
-ActionController::Routing::Routes.reload rescue nil
-
-$asset_packages_yml = YAML.load_file("#{RAILS_ROOT}/vendor/plugins/asset_packager/test/asset_packages.yml")
-$asset_base_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/test/assets"
-
-class AssetPackageHelperProductionTest < Test::Unit::TestCase
-  include ActionView::Helpers::TagHelper
-  include ActionView::Helpers::AssetTagHelper
-  include Synthesis::AssetPackageHelper
-
-  def setup
-    Synthesis::AssetPackage.any_instance.stubs(:log)
-
-    @controller = Class.new do
-      attr_reader :request
-      def initialize
-        @request = Class.new do
-          def relative_url_root
-            ""
-          end
-        end.new
-      end
-
-    end.new
-  end
-  
-  def build_js_expected_string(*sources)
-    sources.map {|s| %(<script src="/javascripts/#{s}.js" type="text/javascript"></script>) }.join("\n")
-  end
-    
-  def build_css_expected_string(*sources)
-    sources.map {|s| %(<link href="/stylesheets/#{s}.css" rel="Stylesheet" type="text/css" media="screen" />) }.join("\n")
-  end
-    
   def test_js_basic
     assert_dom_equal build_js_expected_string("prototype"),
       javascript_include_merged("prototype")
