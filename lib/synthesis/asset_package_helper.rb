@@ -35,7 +35,25 @@ module Synthesis
       sources.collect { |source|
         source = stylesheet_path(source)
         tag("link", { "rel" => "Stylesheet", "type" => "text/css", "media" => "screen", "href" => source }.merge(options))
-      }.join("\n")    
+      }.join("\n")
+    end
+    
+    def merged_stylesheets(*sources)
+      sources.collect!{|s| s.to_s}
+      sources = (should_merge? ? 
+        AssetPackage.targets_from_sources("stylesheets", sources) : 
+        AssetPackage.sources_from_targets("stylesheets", sources))
+      sources.collect! { |s| stylesheet_path(s) }
+      sources
+    end
+    
+    def merged_javascripts(*sources)
+      sources.collect!{|s| s.to_s}
+      sources = (should_merge? ? 
+        AssetPackage.targets_from_sources("javascripts", sources) : 
+        AssetPackage.sources_from_targets("javascripts", sources))
+      sources.collect! { |s| javascript_path(s) }
+      sources
     end
 
     private
