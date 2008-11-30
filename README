@@ -19,9 +19,9 @@ or subversion revision stamp (if available) into the merged file names.
 Therefore files are correctly cached by the browser AND your users 
 always get the latest version when you re-deploy.
 
-This code is released under the MIT license (like Ruby). You’re free 
+This code is released under the MIT license (like Ruby). You're free 
 to rip it up, enhance it, etc. And if you make any enhancements, 
-I’d like to know so I can add them back in. Thanks!
+I'd like to know so I can add them back in. Thanks!
 
 * Formerly known as MergeJS.
 
@@ -64,6 +64,8 @@ IMPORTANT: JavaScript files can break once compressed if each statement doesn't 
 The minifier puts multiple statements on one line, so if the semi-colon is missing, the statement may no 
 longer makes sense and cause a syntax error.
 
+== Examples of config/asset_packages.yml
+
 Example from a fresh rails app after running the rake task. (Stylesheets is blank because a 
 default rails app has no stylesheets yet.):
 
@@ -78,7 +80,7 @@ javascripts:
 stylesheets: 
 - base: []
 
-Example with multiple merged files:
+Multiple packages:
 
 ---
 javascripts:
@@ -158,13 +160,13 @@ rails app, in the vendor/plugins directory. Observe:
 
 > rails newtestapp
 > cd newtestapp
-> ./script/plugin install http://sbecker.net/shared/plugins/asset_packager
+> ./script/plugin install git://github.com/sbecker/asset_packager.git
 > cd vendor/plugins/asset_packager/
-> rake # all tests pass
+> rake test:plugins PLUGIN=asset_packager # all tests pass
 
 == License
-Copyright (c) 2006 Scott Becker - http://synthesis.sbecker.net
-Contact Email: becker.scott@gmail.com
+Copyright (c) 2006-2008 Scott Becker - http://synthesis.sbecker.net
+Contact via Github for change requests, etc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
