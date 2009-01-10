@@ -21,7 +21,7 @@ module Synthesis
         AssetPackage.targets_from_sources("javascripts", sources) : 
         AssetPackage.sources_from_targets("javascripts", sources))
         
-      sources.collect {|source| javascript_include_tag(source, options) }.join("\n")
+      sources.collect {|source| javascript_include_tag(append_js_ext(source), options) }.join("\n")
     end
 
     def stylesheet_link_merged(*sources)
@@ -55,31 +55,16 @@ module Synthesis
       sources.collect! { |s| javascript_path(s) }
       sources
     end
-
+    
     private
-      # rewrite compute_public_path to allow us to not include the query string timestamp
-      # used by ActionView::Helpers::AssetTagHelper
-      def compute_public_path(source, dir, ext=nil, add_asset_id=true)
-        source = source.dup
-        source << ".#{ext}" if File.extname(source) != ext && ext
-        unless source =~ %r{^[-a-z]+://}
-          source = "/#{dir}/#{source}" unless source[0] == ?/
-          asset_id = rails_asset_id(source)
-          source << '?' + asset_id if defined?(RAILS_ROOT) and add_asset_id and not asset_id.blank?
-          source = "#{ActionController::Base.asset_host rescue ""}#{@controller.request.relative_url_root rescue ""}#{source}"
-        end
+    
+    def append_js_ext(source)
+      if source =~ /.*\.\d+/
+        source + '.js'
+      else
         source
       end
-      
-      # rewrite javascript path function to not include query string timestamp
-      def path_to_javascript(source)
-        compute_public_path(source, 'javascripts', 'js', false)       
-      end
+    end
     
-      # rewrite stylesheet path function to not include query string timestamp
-      def path_to_stylesheet(source)
-        compute_public_path(source, 'stylesheets', 'css', false)
-      end
-
   end
 end

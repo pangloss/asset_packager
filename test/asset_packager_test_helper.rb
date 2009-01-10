@@ -13,7 +13,6 @@ require 'synthesis/asset_package_helper'
 ActionView::Base.send :include, Synthesis::AssetPackageHelper
 
 ActionController::Base.logger = nil
-ActionController::Base.ignore_missing_templates = false
 ActionController::Routing::Routes.reload rescue nil
 
 $asset_packages_yml = YAML.load_file( RAILS_ROOT + "/config/asset_packages.yml" )
