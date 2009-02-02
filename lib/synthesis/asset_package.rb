@@ -1,3 +1,5 @@
+require 'ruby-debug'
+
 module Synthesis
   class AssetPackage
 
@@ -204,23 +206,33 @@ module Synthesis
 
       def compress_js(source)
         jsmin_path = File.dirname(__FILE__) + "/../"
-        tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_#{revision}"
-      
-        # write out to a temp file
-        File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
-      
-        # compress file with JSMin library
-        `ruby #{jsmin_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
-
-        # read it back in and trim it
         result = ""
-        File.open("#{tmp_path}_compressed.js", "r") { |f| result += f.read.strip }
-  
-        # delete temp files if they exist
-        File.delete("#{tmp_path}_uncompressed.js") if File.exists?("#{tmp_path}_uncompressed.js")
-        File.delete("#{tmp_path}_compressed.js") if File.exists?("#{tmp_path}_compressed.js")
+        begin
+          # attempt to use YUI compressor
+          IO.popen "java -jar #{jsmin_path}/yuicompressor-2.4.2.jar --type js 2>/dev/null", "r+" do |f|
+            f.write source
+            f.close_write
+            result = f.read
+          end
+          return result if $?.success?
+        rescue
+          # fallback to included ruby compressor
+          tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
 
-        result
+          # write out to a temp file
+          File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
+          `ruby #{jsmin_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
+
+          # read it back in and trim it
+          result = ""
+          File.open("#{tmp_path}_compressed.js", "r") { |f| result += f.read.strip }
+
+          # delete temp files if they exist
+          File.delete("#{tmp_path}_uncompressed.js") if File.exists?("#{tmp_path}_uncompressed.js")
+          File.delete("#{tmp_path}_compressed.js") if File.exists?("#{tmp_path}_compressed.js")
+
+          return result
+        end
       end
   
       def compress_css(source)
