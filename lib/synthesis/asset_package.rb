@@ -58,6 +58,12 @@ module Synthesis
         source_names.uniq
       end
 
+      def lint_all
+        @@asset_packages_yml.keys.each do |asset_type|
+          @@asset_packages_yml[asset_type].each { |p| self.new(asset_type, p).lint }
+        end
+      end
+
       def build_all
         @@asset_packages_yml.keys.each do |asset_type|
           @@asset_packages_yml[asset_type].each { |p| self.new(asset_type, p).build }
@@ -126,6 +132,16 @@ module Synthesis
         File.delete("#{@asset_path}/#{x}")
       end
     end
+    
+    def lint
+      yui_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/lib"
+      if @asset_type == "javascripts"
+        (@sources - %w(prototype effects dragdrop controls)).each do |s|
+          puts "==================== #{s}.#{@extension} ========================"
+          system("java -jar #{yui_path}/yuicompressor-2.4.2.jar --type js -v #{full_asset_path(s)} >/dev/null")
+        end
+      end
+    end
 
     private
       def revision
@@ -164,11 +180,15 @@ module Synthesis
           log "Created #{@asset_path}/#{@target}_#{revision}.#{@extension}"
         end
       end
+      
+      def full_asset_path(source)
+        "#{@asset_path}/#{source}.#{@extension}"
+      end
 
       def merged_file
         merged_file = ""
         @sources.each {|s| 
-          File.open("#{@asset_path}/#{s}.#{@extension}", "r") { |f| 
+          File.open(full_asset_path(s), "r") { |f| 
             merged_file += f.read + "\n" 
           }
         }
