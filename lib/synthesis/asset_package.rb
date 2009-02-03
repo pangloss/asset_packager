@@ -204,13 +204,25 @@ module Synthesis
       end
   
       def compress_css(source)
-        source.gsub!(/\s+/, " ")           # collapse space
-        source.gsub!(/\/\*(.*?)\*\/ /, "") # remove comments - caution, might want to remove this if using css hacks
-        source.gsub!(/\} /, "}\n")         # add line breaks
-        source.gsub!(/\n$/, "")            # remove last break
-        source.gsub!(/ \{ /, " {")         # trim inside brackets
-        source.gsub!(/; \}/, "}")          # trim inside brackets
-        source
+        yui_path = File.dirname(__FILE__) + "/../"
+        result = ""
+        begin
+          # attempt to use YUI compressor
+          IO.popen "java -jar #{yui_path}/yuicompressor-2.4.2.jar --type css 2>/dev/null", "r+" do |f|
+            f.write source
+            f.close_write
+            result = f.read
+          end
+          return result if $?.success?
+        rescue
+          source.gsub!(/\/\*(.*?)\*\//m, "") # remove comments - caution, might want to remove this if using css hacks
+          source.gsub!(/\s+/, " ")           # collapse space
+          source.gsub!(/\} /, "}\n")         # add line breaks
+          source.gsub!(/\n$/, "")            # remove last break
+          source.gsub!(/ \{ /, " {")         # trim inside brackets
+          source.gsub!(/; \}/, "}")          # trim inside brackets
+          source
+        end
       end
 
       def get_extension
