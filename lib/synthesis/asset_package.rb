@@ -186,13 +186,13 @@ module Synthesis
       end
 
       def merged_file
-        merged_file = ""
+        result = ""
         @sources.each {|s| 
           File.open(full_asset_path(s), "r") { |f| 
-            merged_file += f.read + "\n" 
+            result += f.read + "\n" 
           }
         }
-        merged_file
+        result
       end
     
       def compressed_file
@@ -203,58 +203,70 @@ module Synthesis
       end
 
       def compress_js(source)
-        lib_path = File.dirname(__FILE__) + "/../" # Path to library dir with YUI and JSMIN
-        result = ""
+        compress_with_yui(source,:js) || compress_with_jsmin(source)
+      end
+       
+      def compress_css(source)
+        compress_with_yui(source,:css) || compress_with_regexp(source)
+      end
+      
+      # Compress asset using YUI
+      # source - asset source
+      # type - asset type, one of [js,css]
+      def compress_with_yui(source,type)        
         begin
+          result = nil
+          
           # attempt to use YUI compressor
-          IO.popen "java -jar #{lib_path}/yuicompressor-2.4.2.jar --type js 2>/dev/null", "r+" do |f|
+          IO.popen "java -jar #{lib_path}/yuicompressor-2.4.2.jar --type #{type} 2>/dev/null", "r+" do |f|
             f.write source
             f.close_write
             result = f.read
           end
-          return result if $?.success?
-        rescue
-          # fallback to included ruby compressor
-          tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_#{revision}"
-
-          # write out to a temp file
-          File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
           
-          # apply JSMIN compressor
-          `ruby #{lib_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
-
-          # read it back in and trim it
-          result = ""
-          File.open("#{tmp_path}_compressed.js", "r") { |f| result += f.read.strip }
-
-          # delete temp files if they exist
-          File.delete("#{tmp_path}_uncompressed.js") if File.exists?("#{tmp_path}_uncompressed.js")
-          File.delete("#{tmp_path}_compressed.js") if File.exists?("#{tmp_path}_compressed.js")
-
-          return result
+          return nil unless $?.success?
+        
+          result
+        rescue
+          return nil
         end
       end
-  
-      def compress_css(source)
-        lib_path = File.dirname(__FILE__) + "/../" # Path to library dir with YUI and JSMIN
+      
+      # Compress asset using JSMIN
+      def compress_with_jsmin(source)
+        # fallback to included ruby compressor
+        tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_#{revision}"
+
+        # write out to a temp file
+        File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
+          
+        # apply JSMIN compressor
+        `ruby #{lib_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
+
+        # read it back in and trim it
         result = ""
-        begin
-          # attempt to use YUI compressor
-          IO.popen "java -jar #{lib_path}/yuicompressor-2.4.2.jar --type css 2>/dev/null", "r+" do |f|
-            f.write source
-            f.close_write
-            result = f.read
-          end
-          return result if $?.success?
-        rescue
-          source.gsub!(/\/\*(.*?)\*\//m, "") # remove comments - caution, might want to remove this if using css hacks
-          source.gsub!(/\s+/, " ")           # collapse space
-          source.gsub!(/\} /, "}\n")         # add line breaks
-          source.gsub!(/\n$/, "")            # remove last break
-          source.gsub!(/ \{ /, " {")         # trim inside brackets
-          source.gsub!(/; \}/, "}")          # trim inside brackets
-          source
-        end
+        File.open("#{tmp_path}_compressed.js", "r") { |f| result += f.read.strip }
+
+        # delete temp files if they exist
+        File.delete("#{tmp_path}_uncompressed.js") if File.exists?("#{tmp_path}_uncompressed.js")
+        File.delete("#{tmp_path}_compressed.js") if File.exists?("#{tmp_path}_compressed.js")
+
+        return result
+      end
+      
+      # Compress asset using set of regular expressions
+      def compress_with_regexp(source)
+        source.gsub!(/\/\*(.*?)\*\//m, "") # remove comments - caution, might want to remove this if using css hacks
+        source.gsub!(/\s+/, " ")           # collapse space
+        source.gsub!(/\} /, "}\n")         # add line breaks
+        source.gsub!(/\n$/, "")            # remove last break
+        source.gsub!(/ \{ /, " {")         # trim inside brackets
+        source.gsub!(/; \}/, "}")          # trim inside brackets
+        source
+      end
+      
+      def lib_path
+        File.dirname(__FILE__) + "/../" # Path to library dir with YUI and JSMIN
       end
 
       def get_extension
@@ -269,14 +281,13 @@ module Synthesis
       end
       
       def self.log(message)
-        Rails.logger.info message
+        puts message
       end
 
       def self.build_file_list(path, extension)
         re = Regexp.new(".#{extension}\\z")
-        file_list = Dir.new(path).entries.delete_if { |x| ! (x =~ re) }.map {|x| x.chomp(".#{extension}")}
-        # reverse javascript entries so prototype comes first on a base rails app
-        file_list.reverse! if extension == "js"
+        file_list = Dir.new(path).entries.delete_if { |x| ! (x =~ re) }.map {|x| x.chomp(".#{extension}")}        
+        file_list.reverse! if extension == "js" # reverse javascript entries so prototype comes first on a base rails app
         file_list
       end
    
