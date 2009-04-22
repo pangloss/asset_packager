@@ -19,13 +19,17 @@ $asset_packages_yml = YAML.load_file( RAILS_ROOT + "/config/asset_packages.yml" 
 $asset_base_path    = RAILS_ROOT + "/public"
 
 class AssetPackageHelperTest < Test::Unit::TestCase
+  include ActionController::Assertions::DomAssertions
   include ActionView::Helpers::TagHelper
   include ActionView::Helpers::AssetTagHelper
   include Synthesis::AssetPackageHelper
+  
+  def clean_backtrace(&block)
+    yield
+  end
 
   def setup
     Synthesis::AssetPackage.any_instance.stubs(:log)
-    self.stubs(:should_merge?).returns(true)
 
     @controller = Class.new do
       def request

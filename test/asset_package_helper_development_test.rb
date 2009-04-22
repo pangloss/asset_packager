@@ -1,7 +1,7 @@
-ENV['RAILS_ENV'] = "development"
+ENV['RAILS_ENV'] = RAILS_ENV = "development"
 require File.dirname(__FILE__) + '/asset_packager_test_helper.rb'
 
-class AssetPackageHelperProductionTest < AssetPackageHelperTest
+class AssetPackageHelperDevelopmentTest < AssetPackageHelperTest
 
   def test_js_basic
     assert_dom_equal build_js_expected_string("prototype"),
