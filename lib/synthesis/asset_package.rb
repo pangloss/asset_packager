@@ -203,11 +203,11 @@ module Synthesis
       end
 
       def compress_js(source)
-        jsmin_path = File.dirname(__FILE__) + "/../"
+        lib_path = File.dirname(__FILE__) + "/../" # Path to library dir with YUI and JSMIN
         result = ""
         begin
           # attempt to use YUI compressor
-          IO.popen "java -jar #{jsmin_path}/yuicompressor-2.4.2.jar --type js 2>/dev/null", "r+" do |f|
+          IO.popen "java -jar #{lib_path}/yuicompressor-2.4.2.jar --type js 2>/dev/null", "r+" do |f|
             f.write source
             f.close_write
             result = f.read
@@ -215,11 +215,13 @@ module Synthesis
           return result if $?.success?
         rescue
           # fallback to included ruby compressor
-          tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
+          tmp_path = "#{RAILS_ROOT}/tmp/#{@target}_#{revision}"
 
           # write out to a temp file
           File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
-          `ruby #{jsmin_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
+          
+          # apply JSMIN compressor
+          `ruby #{lib_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
 
           # read it back in and trim it
           result = ""
@@ -234,11 +236,11 @@ module Synthesis
       end
   
       def compress_css(source)
-        yui_path = File.dirname(__FILE__) + "/../"
+        lib_path = File.dirname(__FILE__) + "/../" # Path to library dir with YUI and JSMIN
         result = ""
         begin
           # attempt to use YUI compressor
-          IO.popen "java -jar #{yui_path}/yuicompressor-2.4.2.jar --type css 2>/dev/null", "r+" do |f|
+          IO.popen "java -jar #{lib_path}/yuicompressor-2.4.2.jar --type css 2>/dev/null", "r+" do |f|
             f.write source
             f.close_write
             result = f.read
@@ -267,7 +269,7 @@ module Synthesis
       end
       
       def self.log(message)
-        puts message
+        Rails.logger.info message
       end
 
       def self.build_file_list(path, extension)
