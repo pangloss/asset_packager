@@ -1,20 +1,15 @@
 module Synthesis
-  class AssetPackage
+  class AssetPackage    
+      
+    cattr_accessor :merge_environments
+    
+    @@merge_environments = ["production"]
 
-    # class variables
     @@asset_packages_yml = $asset_packages_yml || 
       (File.exists?("#{RAILS_ROOT}/config/asset_packages.yml") ? YAML.load_file("#{RAILS_ROOT}/config/asset_packages.yml") : nil)
   
     # singleton methods
     class << self
-      
-      def merge_environments=(environments)
-        @@merge_environments = environments
-      end
-      
-      def merge_environments
-        @@merge_environments ||= ["production"]
-      end
       
       def parse_path(path)
         /^(?:(.*)\/)?([^\/]+)$/.match(path).to_a
@@ -59,20 +54,20 @@ module Synthesis
       end
 
       def lint_all
-        @@asset_packages_yml.keys.each do |asset_type|
-          @@asset_packages_yml[asset_type].each { |p| self.new(asset_type, p).lint }
+        @@asset_packages_yml.each_pair do |asset_type,assets|
+          assets.each { |p| self.new(asset_type, p).lint }
         end
       end
 
       def build_all
-        @@asset_packages_yml.keys.each do |asset_type|
-          @@asset_packages_yml[asset_type].each { |p| self.new(asset_type, p).build }
+        @@asset_packages_yml.each_pair do |asset_type,assets|
+          assets.each { |p| self.new(asset_type, p).build }
         end
       end
 
       def delete_all
-        @@asset_packages_yml.keys.each do |asset_type|
-          @@asset_packages_yml[asset_type].each { |p| self.new(asset_type, p).delete_all_builds }
+        @@asset_packages_yml.each_pair do |asset_type,assets|
+          assets.each { |p| self.new(asset_type, p).delete_all_builds }
         end
       end
 
@@ -134,11 +129,10 @@ module Synthesis
     end
     
     def lint
-      yui_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/lib"
       if @asset_type == "javascripts"
         (@sources - %w(prototype effects dragdrop controls)).each do |s|
           puts "==================== #{s}.#{@extension} ========================"
-          system("java -jar #{yui_path}/yuicompressor-2.4.2.jar --type js -v #{full_asset_path(s)} >/dev/null")
+          system("java -jar #{lib_path}/yuicompressor-2.4.2.jar --type js -v #{full_asset_path(s)} >/dev/null")
         end
       end
     end

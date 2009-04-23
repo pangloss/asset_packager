@@ -14,6 +14,12 @@ namespace :asset do
       Synthesis::AssetPackage.delete_all
     end
     
+    desc "Delete all asset builds and then merge and compress assets"
+    task :rebuild_all do
+      Synthesis::AssetPackage.delete_all
+      Synthesis::AssetPackage.build_all
+    end
+    
     desc "Generate asset_packages.yml from existing assets"
     task :create_yml do
       Synthesis::AssetPackage.create_yml
