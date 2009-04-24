@@ -6,7 +6,6 @@ module Synthesis
     end
 
     def javascript_include_merged(*sources)
-      options = sources.last.is_a?(Hash) ? sources.pop.stringify_keys : { }
 
       if sources.include?(:defaults) 
         sources = sources[0..(sources.index(:defaults))] + 
@@ -16,55 +15,40 @@ module Synthesis
         sources.delete(:defaults)
       end
 
-      sources.collect!{|s| s.to_s}
-      sources = (should_merge? ? 
-        AssetPackage.targets_from_sources("javascripts", sources) : 
-        AssetPackage.sources_from_targets("javascripts", sources))
-        
-      sources.collect {|source| javascript_include_tag(append_js_ext(source), options) }.join("\n")
+      merged_javascripts(*sources).join("\n")
     end
 
     def stylesheet_link_merged(*sources)
-      options = sources.last.is_a?(Hash) ? sources.pop.stringify_keys : { }
-
-      sources.collect!{|s| s.to_s}
-      sources = (should_merge? ? 
-        AssetPackage.targets_from_sources("stylesheets", sources) : 
-        AssetPackage.sources_from_targets("stylesheets", sources))
-
-      sources.collect { |source|
-        source = path_to_stylesheet(source)
-        tag("link", { "rel" => "Stylesheet", "type" => "text/css", "media" => "screen", "href" => source }.merge(options))
-      }.join("\n")
+      merged_stylesheets(*sources).join("\n")
     end
     
+    # Get an array of merged stylesheet tags
     def merged_stylesheets(*sources)
+      options = sources.last.is_a?(Hash) ? sources.pop.stringify_keys : { }
+      
       sources.collect!{|s| s.to_s}
       sources = (should_merge? ? 
         AssetPackage.targets_from_sources("stylesheets", sources) : 
         AssetPackage.sources_from_targets("stylesheets", sources))
-      sources.collect! { |s| stylesheet_path(s) }
+      sources.collect! { |source| 
+        tag( "link", { 'rel' => 'Stylesheet', 'type' => 'text/css', 'media' => 'screen', 'href' => "/stylesheets/#{source}.css" }.merge(options))
+      }
       sources
     end
     
+    # Get an array of merged javascript tags
     def merged_javascripts(*sources)
+      options = sources.last.is_a?(Hash) ? sources.pop.stringify_keys : { }
+      
       sources.collect!{|s| s.to_s}
       sources = (should_merge? ? 
         AssetPackage.targets_from_sources("javascripts", sources) : 
         AssetPackage.sources_from_targets("javascripts", sources))
-      sources.collect! { |s| javascript_path(s) }
+      sources.collect! { |source| 
+        tag( "script", { 'type' => 'text/javascript', 'src' => "/javascripts/#{source}.js" }.merge(options), true ) + '</script>'
+      }
       sources
     end
-    
-    private
-    
-    def append_js_ext(source)
-      if source =~ /.*\.\d+/
-        source + '.js'
-      else
-        source
-      end
-    end
-    
+        
   end
 end

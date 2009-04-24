@@ -1,8 +1,6 @@
 module Synthesis
   class AssetPackage    
-      
-    cattr_accessor :merge_environments
-    
+          
     @@merge_environments = ["production"]
 
     @@asset_packages_yml = $asset_packages_yml || 
@@ -10,6 +8,14 @@ module Synthesis
   
     # singleton methods
     class << self
+      
+      def merge_environments
+        @@merge_environments
+      end
+      
+      def merge_environments=(v)
+        @@merge_environments = v
+      end
       
       def parse_path(path)
         /^(?:(.*)\/)?([^\/]+)$/.match(path).to_a
