@@ -189,7 +189,22 @@ module Synthesis
         result = ""
         @sources.each {|s| 
           File.open(full_asset_path(s), "r") { |f| 
-            result += f.read + "\n" 
+            asset_content = f.read
+            case @asset_type
+            when 'stylesheets'
+              # Fix relative urls in url()
+              asset_content.gsub!(%r{
+                \b
+                (url[(]\s*)           # Emulate look behind assertion, match "url("
+                (?=                   # Look ahead assertion to match relative path
+                  [^/:\s](?!://)        # Not start with /:, and make sure it isn't
+                  (?:[^)](?!://))+\)    # a absolute path with protocol prefix
+                )
+                }x,
+                "\\1#{File.dirname(s)}/"
+              )
+            end
+            result << asset_content << "\n"
           }
         }
         result
